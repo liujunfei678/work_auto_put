@@ -65,6 +65,11 @@ def get_location(address):
 
 if __name__ == '__main__':
     # 输入用户名、密码、cookie、地址
+    print('*'*50)
+    print('* 导入你的信息，用于实习日志生成 *')
+    print('版本：v0.1')
+    print('日期：2024-08-26')
+    print('*'*50)
     name=input('请输入你的姓名（实习日志生成使用）：')
     username=input('请输入用户名：')
     password=input('请输入密码：')

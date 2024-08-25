@@ -391,6 +391,11 @@ def get_location(address):
 
 
 if __name__=='__main__':
+    print('*'*50)
+    print('欢迎使用自动填写日志脚本！')
+    print('版本：v0.1')
+    print('日期:2024/08/26')
+    print('*'*50)
     with open('user_fixation.json','r',encoding='utf-8') as f:
         user_fixation=json.load(f)
     
@@ -422,7 +427,7 @@ if __name__=='__main__':
 
     content=input('请输入需要填充日志内容：')
     dir_img_path=input('请输入实习图片路径或者图片文件夹路径：')
-    
+
     ai_answer=get_all_answer(content,user_fixation['name'])
 
     login_info={
