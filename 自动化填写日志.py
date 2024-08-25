@@ -393,7 +393,7 @@ def get_location(address):
 if __name__=='__main__':
     print('*'*50)
     print('欢迎使用自动填写日志脚本！')
-    print('版本：v0.1')
+    print('版本：v0.1 ')
     print('日期:2024/08/26')
     print('*'*50)
     with open('user_fixation.json','r',encoding='utf-8') as f:
