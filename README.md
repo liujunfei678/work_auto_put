@@ -6,7 +6,7 @@
 1.首先需要手动登录实践基地并获取网站的**cookie**，作为之后我们的登录凭证;<br>
 2.需要提供教育实践基地的**用户名**以及**密码**用于自动化上传图片;<br>
 3.需要提供一个固定参数：你**工作的地点**<br>
-4.申请星火大模型免费版api,复制apipassword<br>
+4.申请星火大模型免费版（spark lite）api,复制apipassword<br>
 https://console.xfyun.cn/services/cbm
 ![image](https://github.com/user-attachments/assets/fae437e3-da96-4cfb-a458-195e4434d825)
 
