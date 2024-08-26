@@ -74,6 +74,7 @@ if __name__ == '__main__':
     username=input('请输入用户名：')
     password=input('请输入密码：')
     cookie=input('请输入用户cookie：')
+    api_key=input('星火API_KEY：')
     address=input('请输入工作地址：')
     location=get_location(address)
 
@@ -82,7 +83,8 @@ if __name__ == '__main__':
         'username':username,
         'password':password,
         'cookie':cookie,
-        'location':location
+        'location':location,
+        'api_key':api_key
     }
     with open('user_fixation.json','w',encoding='utf-8') as f:
         json.dump(all_dic,f,indent=4)

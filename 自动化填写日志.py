@@ -170,7 +170,7 @@ def write_diary(id,header,user_parm,diary_dic_detial,ai_answer_dic,diary_base_in
 
 ###大模型回答
 
-def get_answer(content):
+def get_answer(content,api):
     '''
     获取ai回答（星火大模型免费版）
     :param content:你的信息
@@ -194,7 +194,7 @@ def get_answer(content):
                     
                 }
             header = {
-                "Authorization": "Bearer BuZeadhhZCFszliYFeop:JGGXxBKQzXGWpkKdkQSl" # 注意此处替换自己的APIPassword
+                "Authorization": f"Bearer {api}" # 注意此处替换自己的APIPassword
             }
             response = requests.post(url, headers=header, json=data)
             # print(response.text)
@@ -209,7 +209,7 @@ def get_answer(content):
                 return None
 
 
-def get_all_answer(content,name):
+def get_all_answer(content,name,api):
     '''
     获取所有信息并回答
 
@@ -235,7 +235,7 @@ def get_all_answer(content,name):
     for key in keyword:
         print(f'正在编写{key}的信息...')
         messages =  f'根据以下内容{content}，{value_dict[key]}，只需列出内容，不需要其他信息。'
-        answer=get_answer(messages)
+        answer=get_answer(messages,api)
         all_dic[key]=answer
     return all_dic
 
@@ -428,7 +428,7 @@ if __name__=='__main__':
     content=input('请输入需要填充日志内容：')
     dir_img_path=input('请输入实习图片路径或者图片文件夹路径：')
 
-    ai_answer=get_all_answer(content,user_fixation['name'])
+    ai_answer=get_all_answer(content,user_fixation['name'],api=user_fixation['api_key'])
 
     login_info={
         # 'username':'15924375282',
