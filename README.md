@@ -22,4 +22,5 @@ https://console.xfyun.cn/services/cbm
 1.增加添加日志功能<br>
 2.增加添加日志并自动填写功能<br>
 3.添加每天定时添加日志功能<br>
-
+## windows 可执行文件
+https://github.com/liujunfei678/work_auto_put/releases/tag/v0.2
