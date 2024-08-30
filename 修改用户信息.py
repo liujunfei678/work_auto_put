@@ -2,6 +2,67 @@ import requests
 import re
 import time
 import json
+from selenium.webdriver.edge.options import Options
+from selenium.webdriver.common.by import By
+from selenium import webdriver
+import os
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
+import time
+
+def get_pic_path(login_info):
+    '''
+    获取用户cookie
+    :param login_info:登录信息
+    :return:图片路径
+    '''
+    print('正在获取用户cookie...')
+    retry=0
+    while True:
+
+        url = 'http://wdsj.3enetwork.cn/practice/practice-manage/diaries-student?fInternshipInfoId=b3d8addf72194399b08aaaf17685ef93&fInternshipStudentId=608d714d76cb41c0b715f5724655a0f4&fTemplateBatchInfoId=70169adeec1544bca61be93cfb52aa7b&fIsNeedDiaryReview1=1&fIsNeedDiaryReview2=1&_pageHeader=%E4%B8%93%E4%B8%9A%E5%AE%9E%E4%B9%A0-21%E7%BA%A7&fType=3'
+
+        edge_options = Options()
+        user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0'
+        edge_options.add_argument(f'user-agent={user_agent}')
+        edge_options.add_argument('--headless')
+        edge_options.add_argument('--disable-gpu') 
+        edge_options.add_argument('--enable-javascript')
+        # edge_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        # edge_options.add_argument("--disable-blink-features=AutomationControlled")
+        edge = webdriver.Chrome(options=edge_options)
+        edge.implicitly_wait(10)
+
+        edge.get(url)
+        time.sleep(1)
+        user_input= edge.find_element(By.XPATH, '//*[@id="app"]/div/div/div[2]/form/div[3]/div/div[1]/input')
+        user_input.send_keys(login_info['username'])
+
+        password_input= edge.find_element(By.XPATH, '//*[@id="app"]/div/div/div[2]/form/div[4]/div/div/input')
+        password_input.send_keys(login_info['password'])
+
+        login_button= edge.find_element(By.XPATH, '//*[@id="app"]/div/div/div[2]/form/button')
+        login_button.click()
+        time.sleep(1)
+        cookie=edge.get_cookies()
+        # print(cookie)
+        real_cookie=''
+        for i in cookie:
+            real_cookie+=i['name']+'='+i['value']+'; '
+        print('你的cookie是：',real_cookie)
+        if len(cookie)>0:
+            return real_cookie
+        else:
+            retry+=1
+            if retry>=3:
+                print('获取cookie失败，请手动输入cookie')
+                return input('请输入cookie：')
+            print('获取cookie失败，正在重试...')
+            edge.quit()
+            time.sleep(1)
+
+
 
 
 def get_location(address):
@@ -10,6 +71,7 @@ def get_location(address):
     adresss:目标地址
     return:目标名字，经纬度坐标
     '''
+    print('正在获取经纬度...')
     while True:
         retry=0
         try:
@@ -62,20 +124,22 @@ def get_location(address):
             
 
 
-
+'v0.2:增加自动获取cookie功能'
 if __name__ == '__main__':
     # 输入用户名、密码、cookie、地址
+
     print('*'*50)
     print('* 导入你的信息，用于实习日志生成 *')
-    print('版本：v0.1')
+    print('版本：v0.2')
     print('日期：2024-08-26')
     print('*'*50)
     name=input('请输入你的姓名（实习日志生成使用）：')
     username=input('请输入用户名：')
     password=input('请输入密码：')
-    cookie=input('请输入用户cookie：')
+    # cookie=input('请输入用户cookie：')
     api_key=input('星火API_KEY：')
     address=input('请输入工作地址：')
+    cookie=get_pic_path({'username':username,'password':password})
     location=get_location(address)
 
     all_dic={
@@ -88,4 +152,5 @@ if __name__ == '__main__':
     }
     with open('user_fixation.json','w',encoding='utf-8') as f:
         json.dump(all_dic,f,indent=4)
+    print('信息保存成功！可以正常使用了！请运行主程序！')
 

@@ -12,7 +12,9 @@ import time
 from urllib.parse import unquote
 import random
 import re
-
+from apscheduler.schedulers.background import BackgroundScheduler
+import datetime
+import time
 
 # header={
 
@@ -276,8 +278,12 @@ def get_pic_path(img_path,login_info):
         login_button= edge.find_element(By.XPATH, '//*[@id="app"]/div/div/div[2]/form/button')
         login_button.click()
 
-        target_page=edge.find_element(By.XPATH, '//*[@id="app"]/div/div[1]/div[2]/div[2]/section/div/div/div/div[2]/div[3]/table/tbody/tr[3]/td[13]/div/a')
-        target_page.click()
+        target_page=edge.find_elements(By.XPATH, '//*[@id="app"]/div/div[1]/div[2]/div[2]/section/div/div/div/div[2]/div[3]/table/tbody/tr')#[3]/td[13]/div/a
+        for element in target_page:
+            if '专业实习' in element.find_element(By.XPATH, './td[3]/div').text:
+                target_page=element.find_element(By.XPATH, './td[13]/div/a')
+                target_page.click()
+                break
 
         first_label=edge.find_element(By.XPATH, '//*[@id="app"]/div/div[1]/div[2]/div[2]/section/div/div/div/div/div/div/div[3]/div[3]/table/tbody/tr[1]/td[3]/div/a')
         first_label.click()
@@ -316,6 +322,72 @@ def get_pic_path(img_path,login_info):
             
 
     return unquote(img_real_path)
+
+
+def add_diary(login_info,header,user_parm):
+
+    '''
+    添加日志
+
+    :param login_info:登录信息
+
+    :return:None
+    '''
+    print('正在添加日志...')
+    diary_list_before=get_all_diary(header,user_parm)
+    url = 'http://wdsj.3enetwork.cn/practice/practice-manage/diaries-student?fInternshipInfoId=b3d8addf72194399b08aaaf17685ef93&fInternshipStudentId=608d714d76cb41c0b715f5724655a0f4&fTemplateBatchInfoId=70169adeec1544bca61be93cfb52aa7b&fIsNeedDiaryReview1=1&fIsNeedDiaryReview2=1&_pageHeader=%E4%B8%93%E4%B8%9A%E5%AE%9E%E4%B9%A0-21%E7%BA%A7&fType=3'
+
+    edge_options = Options()
+    user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0'
+    edge_options.add_argument(f'user-agent={user_agent}')
+    edge_options.add_argument('--headless')
+    edge_options.add_argument('--disable-gpu') 
+    edge_options.add_argument('--enable-javascript')
+
+    edge = webdriver.Chrome(options=edge_options)
+    edge.implicitly_wait(10)
+
+    edge.get(url)
+    time.sleep(1)
+    user_input= edge.find_element(By.XPATH, '//*[@id="app"]/div/div/div[2]/form/div[3]/div/div[1]/input')
+    user_input.send_keys(login_info['username'])
+
+    password_input= edge.find_element(By.XPATH, '//*[@id="app"]/div/div/div[2]/form/div[4]/div/div/input')
+    password_input.send_keys(login_info['password'])
+
+    login_button= edge.find_element(By.XPATH, '//*[@id="app"]/div/div/div[2]/form/button')
+    login_button.click()
+    # input('Press any key to continue')
+    target_page=edge.find_elements(By.XPATH, '//*[@id="app"]/div/div[1]/div[2]/div[2]/section/div/div/div/div[2]/div[3]/table/tbody/tr')#[3]/td[13]/div/a
+    # target_page.click()
+    for element in target_page:
+        if '专业实习' in element.find_element(By.XPATH, './td[3]/div').text:
+            target_page=element.find_element(By.XPATH, './td[13]/div/a')
+            target_page.click()
+            break
+
+    time.sleep(1)
+    target_button=edge.find_element(By.XPATH, "//div[@class='left-panel']//button[@text='添加']")
+    target_button.click()
+    time.sleep(1)
+    # input('Press any key to continue')
+    submit_button=edge.find_element(By.XPATH, "//div[@class='flex justify-end dialog-footer']/button")
+    submit_button.click()
+    # time.sleep(1)
+
+    # input('Press any key to quit')
+    edge.quit()
+
+
+    diary_list_after=get_all_diary(header,user_parm)
+
+    if diary_list_before[0]==diary_list_after[0]:
+        print('今日日志添加达到上限！')
+        return False
+
+    else:
+        print('日志添加成功！')
+        return True
 
 
 def get_random_pic_path(dir_path):
@@ -388,66 +460,212 @@ def get_location(address):
                 print('获取经纬度失败(考虑可能cookie过期)，请手动输入经纬度')
                 return input('请输入经纬度（如：）：虹软大厦,30.192639,120.206354')
             
+def write_ai_diary(header,user_parm):
+        '''
+        编写ai日志
 
+        :param header:请求头
+        :param user_parm:用户参数
+        :return:None
+        '''
+        diary_list=get_all_diary(header,user_parm)
+        print('\n以下是你的日志列表：')
+        print(f'序号 日志名称 日志id 日志创建时间')
+        for i,item in enumerate(diary_list):
+            print(i,item)
+        print('请输入你需要AI写入的日志编号：')
+        nun=int(input())
+        id=diary_list[nun][1]
+
+        diary_dic_detial=get_diary_detail(id,header)
+
+        diary_name=input('请输入日志名称（如：张三20240819）：')
+        work_time=input('请输入日志日期（如：2024/08/19）：')
+        work_place=user_fixation['location']
+        # work_place=get_location(input('请输入日志地址（如：杭州市滨江虹软）：'))
+        
+        diary_base_info=[diary_name,work_time,work_place]
+
+        content=input('请输入需要填充日志内容：')
+        dir_img_path=input('请输入实习图片路径或者图片文件夹路径：')
+        ai_answer=get_all_answer(content,user_fixation['name'],api=user_fixation['api_key'])
+        login_info={
+            'username':user_fixation['username'],
+            'password':user_fixation['password'],
+        }
+        
+        if os.path.isdir(dir_img_path):
+            print('目标路径为文件夹，随机选择一张图片')
+            img_path=get_random_pic_path(dir_img_path)
+        else:
+            print('目标路径为文件，直接上传')
+            img_path=dir_img_path
+        img_real_path=get_pic_path(img_path,login_info)
+        write_diary(id,header,user_parm,diary_dic_detial,ai_answer,diary_base_info,img_real_path)
+
+## 第三部分功能函数
+from datetime import date
+def get_this_time(name):
+    '''
+    获取当前时间
+    :return:当前时间
+    '''
+    today = date.today()
+    formatted_date = today.strftime("%Y-%m-%d")
+    name_date=name+formatted_date.split('-')[0]+formatted_date.split('-')[1]+formatted_date.split('-')[2]
+    submit_time=formatted_date.replace('-','/')
+    print(f'创建日志: {name_date},提交时间: {submit_time}')
+    return name_date,submit_time
+
+def read_and_remove_first_line(file_path):
+    '''
+    读取并删除文件第一行
+    :param file_path:文件路径
+    :return:第一行内容
+    '''
+    with open(file_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+    if not lines:
+        return None  # 文件为空
+    first_line = lines[0].strip()
+    remaining_lines = lines[1:]
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.writelines(remaining_lines)
+    return first_line
+
+def create_and_write_diary(user_fixation,header,user_parm):
+
+    '''
+    创建并写入日志
+    :return:None
+    '''
+    add_flag=add_diary(login_info=user_fixation,header=header,user_parm=user_parm)
+    if add_flag:
+        contentpath=input('请输入 日志内容 或 日志内容文件路径（txt）：')
+        dir_img_path=input('请输入 实习图片路径 或者 图片文件夹路径 ：')
+        diary_list=get_all_diary(header,user_parm)
+        id=diary_list[0][1]
+        diary_dic_detial=get_diary_detail(id,header)
+        diary_name,work_time=get_this_time(user_fixation['name'])
+        work_place=user_fixation['location']
+        # work_place=get_location(input('请输入日志地址（如：杭州市滨江虹软）：'))
+        
+        diary_base_info=[diary_name,work_time,work_place]
+        if os.path.isfile(contentpath) and '.txt' in contentpath:
+            print('正在读取txt文件内容...')
+            content=read_and_remove_first_line(contentpath)
+        else:
+            content=contentpath
+        ai_answer=get_all_answer(content,user_fixation['name'],api=user_fixation['api_key'])
+        login_info={
+            'username':user_fixation['username'],
+            'password':user_fixation['password'],
+        }
+        
+        if os.path.isdir(dir_img_path):
+            print('目标路径为文件夹，随机选择一张图片')
+            img_path=get_random_pic_path(dir_img_path)
+        else:
+            print('目标路径为文件，直接上传')
+            img_path=dir_img_path
+        img_real_path=get_pic_path(img_path,login_info)
+        write_diary(id,header,user_parm,diary_dic_detial,ai_answer,diary_base_info,img_real_path)
+
+## 第四部分功能函数
+def my_task(user_fixation,header,user_parm,contentpath,dir_img_path):
+    '''
+    创建并写入日志
+    :return:None
+    '''
+    print("Task executed at:", datetime.datetime.now())
+    add_flag=add_diary(login_info=user_fixation,header=header,user_parm=user_parm)
+    if add_flag:
+        # contentpath=input('请输入 日志内容 或 日志内容文件路径（txt）：')
+        # dir_img_path=input('请输入 实习图片路径 或者 图片文件夹路径 ：')
+        diary_list=get_all_diary(header,user_parm)
+        id=diary_list[0][1]
+        diary_dic_detial=get_diary_detail(id,header)
+        diary_name,work_time=get_this_time(user_fixation['name'])
+        work_place=user_fixation['location']
+        # work_place=get_location(input('请输入日志地址（如：杭州市滨江虹软）：'))
+        
+        diary_base_info=[diary_name,work_time,work_place]
+        if os.path.isfile(contentpath) and '.txt' in contentpath:
+            print('正在读取txt文件内容...')
+            content=read_and_remove_first_line(contentpath)
+        else:
+            content=contentpath
+        ai_answer=get_all_answer(content,user_fixation['name'],api=user_fixation['api_key'])
+        login_info={
+            'username':user_fixation['username'],
+            'password':user_fixation['password'],
+        }
+        
+        if os.path.isdir(dir_img_path):
+            print('目标路径为文件夹，随机选择一张图片')
+            img_path=get_random_pic_path(dir_img_path)
+        else:
+            print('目标路径为文件，直接上传')
+            img_path=dir_img_path
+        img_real_path=get_pic_path(img_path,login_info)
+        write_diary(id,header,user_parm,diary_dic_detial,ai_answer,diary_base_info,img_real_path)
+
+'v0.1:初步完成整体功能'
+'v0.2:1.增加添加日志功能2.增加功能3自动创建并编写日志功能'
 
 if __name__=='__main__':
     print('*'*50)
     print('欢迎使用自动填写日志脚本！')
-    print('版本：v0.1 ')
-    print('日期:2024/08/26')
+    print('版本：v0.2 ')
+    print('启动日期:2024/08/26')
+    print('作者：ljf')
     print('*'*50)
+
+
     with open('user_fixation.json','r',encoding='utf-8') as f:
         user_fixation=json.load(f)
-    
+    print('欢迎你，',user_fixation['name'],'！')
+    print('功能介绍：')
+    print('1.添加日志：添加一个新日志到网工日志平台\n')
+    print('2.修改（编写）已有日志：根据已有日志内容，自动编写日志并上传图片到网工日志平台')
+    print('     -参数输入：(1) 日志编号 (2) 修改的日志名称 (3) 修改的日志日期 (4) 图片路径或存有图片的文件夹路径\n')
+    print('3.创建并填写日志：')
+    print('     -参数输入：(1) 日志内容或日志内容txt文件  (2) 日志图片路径或图片文件路径 \n')
+    print('4.定时任务：每天21点自动创建并填写日志')
+    print('     -参数输入：(1) 日志内容或日志内容txt文件  (2) 日志图片路径或图片文件路径 \n')
+    select=input('请选择你要执行的操作(1/2/3/4)：')
     header={
     'cookie':user_fixation['cookie'],#个人cookie
     }
-    user_parm=get_user_parm(header)
-
-    diary_list=get_all_diary(header,user_parm)
-    print('\n以下是你的日志列表：')
-    print(f'序号 日志名称 日志id 日志创建时间')
-    for i,item in enumerate(diary_list):
-        print(i,item)
-    print('请输入你需要AI写入的日志编号：')
-    nun=int(input())
-    id=diary_list[nun][1]
-
-    diary_dic_detial=get_diary_detail(id,header)
-
-    # diary_name='曾振铭20240819'
-    # work_time='2024/08/19'
-    # work_place="虹软大厦,30.192639,120.206354"
-    diary_name=input('请输入日志名称（如：刘骏飞20240819）：')
-    work_time=input('请输入日志日期（如：2024/08/19）：')
-    work_place=user_fixation['location']
-    # work_place=get_location(input('请输入日志地址（如：杭州市滨江虹软）：'))
-    
-    diary_base_info=[diary_name,work_time,work_place]
-
-    content=input('请输入需要填充日志内容：')
-    dir_img_path=input('请输入实习图片路径或者图片文件夹路径：')
-
-    ai_answer=get_all_answer(content,user_fixation['name'],api=user_fixation['api_key'])
-
-    login_info={
-        # 'username':'15924375282',
-        # 'password':'375282',
-        'username':user_fixation['username'],
-        'password':user_fixation['password'],
-    }
-    
-    if os.path.isdir(dir_img_path):
-        print('目标路径为文件夹，随机选择一张图片')
-        img_path=get_random_pic_path(dir_img_path)
+    # user_parm=get_user_parm(header)
+    if select=='1':
+        user_parm=get_user_parm(header)
+        add_diary(login_info=user_fixation,header=header,user_parm=user_parm)
+    elif select=='2':
+        user_parm=get_user_parm(header)
+        write_ai_diary(header=header,user_parm=user_parm)
+    elif select=='3':
+        user_parm=get_user_parm(header)
+        create_and_write_diary(user_fixation=user_fixation,header=header,user_parm=user_parm)
+    elif select=='4':
+        user_parm=get_user_parm(header)
+        contentpath=input('请输入 日志内容 或 日志内容文件路径（txt）：')
+        dir_img_path=input('请输入 实习图片路径 或者 图片文件夹路径 ：')
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(my_task, 'cron', hour=21, minute=0, kwargs={'user_fixation': user_fixation, 'header': header,'user_parm': user_parm,'contentpath':contentpath,'dir_img_path':dir_img_path})
+        scheduler.start()
+        try:
+            while True:
+                print("定时程序正在运行中...",datetime.datetime.now())
+                time.sleep(60)  
+        except (KeyboardInterrupt, SystemExit):
+            scheduler.shutdown()
+            print("定时任务被终止...")
     else:
-        print('目标路径为文件，直接上传')
-        img_path=dir_img_path
-    img_real_path=get_pic_path(img_path,login_info)
+        print('输入有误，请重新输入！')
+        exit(0)
 
-    write_diary(id,header,user_parm,diary_dic_detial,ai_answer,diary_base_info,img_real_path)
-    # write_diary(id,diary_dic_detial,ai_answer_dic,diary_name,work_time,work_place,img_path)
+        # my_task(user_fixation=user_fixation,header=header,user_parm=user_parm,contentpath=contentpath,dir_img_path=dir_img_path)
 
 
-    # diary_dic_detial=get_diary_detail(id)
-    # write_diary(id,diary_dic_detial)
+    
